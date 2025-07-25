@@ -88,17 +88,17 @@ city.traverse((child) => {
       switch (matName) {
         case 'ChinChenNeon':
           positionOffset.set(1, 1, -4);
-          lightColor = 0x00ffff;
+          lightColor = 0x33ff00; // sin canal alfa
           intensity = 12;
           break;
         case 'BarNeon':
-          positionOffset.set(0, 1.5, 0.5);
-          lightColor = 0xff0000;
+          positionOffset.set(4, 2, -5);
+          lightColor = 0xff1500; // sin canal alfa
           intensity = 10;
           break;
         case 'HotelNeon':
           positionOffset.set(0, 3, -0.5);
-          lightColor = 0xff00ff;
+          lightColor = 0x3cd7ff; // sin canal alfa
           intensity = 14;
           break;
         default:
@@ -117,7 +117,7 @@ city.traverse((child) => {
       streetLampMaterials.push(child.material);
 
       const lampLight = new THREE.PointLight(0xffddaa, 8, 10);
-      lampLight.position.copy(basePosition.clone().add(new THREE.Vector3(0, 1.5, 0)));
+      lampLight.position.copy(basePosition.clone().add(new THREE.Vector3(-2, -1, -4)));
       lampLight.castShadow = true;
       scene.add(lampLight);
     }
