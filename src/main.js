@@ -28,28 +28,33 @@ controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
 // --- Luces ---
-scene.add(new THREE.AmbientLight(0x111122, 0.7));
+const ambientLight = new THREE.AmbientLight(0x111122, 0.3);
+scene.add(ambientLight);
 
-const moonLight = new THREE.DirectionalLight(0x99bbff, 0.5);
-moonLight.position.set(10, 15, 10);
-moonLight.castShadow = true;
-moonLight.shadow.mapSize.set(1024, 1024);
-moonLight.shadow.bias = -0.001;
+const moonLight = new THREE.DirectionalLight(0x99bbff, 4);
+moonLight.position.set(20, 80, 20);
+moonLight.target.position.set(0, 0, 0);
 scene.add(moonLight);
+scene.add(moonLight.target);
 
-
-const audio = new Audio('/effect.mp3');
-audio.loop = true;
-audio.volume = 0.4;
-audio.play();
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.set(2048, 2048); 
+moonLight.shadow.bias = -0.0005;
+moonLight.shadow.normalBias = 0.01;
+moonLight.shadow.camera.near = 1;
+moonLight.shadow.camera.far = 200;
+moonLight.shadow.camera.left = -50;
+moonLight.shadow.camera.right = 50;
+moonLight.shadow.camera.top = 50;
+moonLight.shadow.camera.bottom = -50;
 
 
 let deloreanFly = null;
 let deloreanStartZ = -40;
 let deloreanEndZ = 40;
-let deloreanSpeed = 0.5;
+let deloreanSpeed = 1;
 let isDeloreanVisible = true;
-let delayBeforeNextCar = 3000;
+let delayBeforeNextCar = 8000;
 
 // --- Audio del coche (radio) ---
 const listener = new THREE.AudioListener();
@@ -61,12 +66,20 @@ let carRadioVolume = 0;
 let isFadingOut = false;
 let carRadioReady = false;
 
+audioLoader.load('/dembow.mp3', (buffer) => {
+  carRadio.setBuffer(buffer);
+  carRadio.setLoop(true);
+  carRadio.setVolume(0); 
+  carRadioReady = true;
+});
 
-
+const textureLoader = new THREE.TextureLoader();
+const sidewalkTexture = textureLoader.load('/texture/textura_piso.jpg');
 
 const loader = new GLTFLoader();
-loader.load('/Semestral_def.glb', (gltf) => {
+loader.load('/semestrall.glb', (gltf) => {
   const city = gltf.scene;
+  console.log('Modelo cargado correctamente');
 
   city.traverse((child) => {
     if (child.isMesh) {
@@ -74,12 +87,15 @@ loader.load('/Semestral_def.glb', (gltf) => {
       child.receiveShadow = true;
     }
 
+    
+
     if (child.name === 'delorean_fly') {
       deloreanFly = child;
       deloreanFly.position.z = deloreanStartZ;
       deloreanFly.visible = true;
     }
   });
+
 
   const box = new THREE.Box3().setFromObject(city);
   const center = new THREE.Vector3();
@@ -91,32 +107,6 @@ loader.load('/Semestral_def.glb', (gltf) => {
   camera.position.set(size, size * 0.6, size);
   controls.target.set(0, 0, 0);
   controls.update();
-
-  // Cargar modelo de Batman después de añadir ciudad
-  const batmanLoader = new GLTFLoader();
-  batmanLoader.load('/batman.glb', (batmanGltf) => {
-    const batmanModel = batmanGltf.scene;
-    batmanModel.scale.set(1, 1, 1);
-
-    const rooftop = city.getObjectByName('building_1');
-    if (rooftop) {
-      const rooftopPos = new THREE.Vector3();
-      rooftop.getWorldPosition(rooftopPos);
-      rooftopPos.y += 1.5;
-      batmanModel.position.copy(rooftopPos);
-
-      batmanModel.traverse((child) => {
-        if (child.isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-        }
-      });
-
-      scene.add(batmanModel);
-    } else {
-      console.warn('No se encontró el objeto "building_1" en el modelo de la ciudad.');
-    }
-  });
 
   const flickerMaterials = { ChinChenNeon: null, BarNeon: null, HotelNeon: null };
   const streetLampMaterials = [];
@@ -138,17 +128,17 @@ loader.load('/Semestral_def.glb', (gltf) => {
           case 'ChinChenNeon':
             positionOffset.set(1, 1, -4);
             lightColor = 0x33ff00;
-            intensity = 12;
+            intensity = 40;
             break;
           case 'BarNeon':
             positionOffset.set(4, 2, -5);
             lightColor = 0xff1500;
-            intensity = 10;
+            intensity = 40;
             break;
           case 'HotelNeon':
             positionOffset.set(0, 3, -0.5);
             lightColor = 0x3cd7ff;
-            intensity = 14;
+            intensity = 40;
             break;
         }
 
@@ -182,7 +172,6 @@ loader.load('/Semestral_def.glb', (gltf) => {
 
   simulateStreetLampFlicker(streetLampMaterials);
 });
-
 
 function simulateNeonFlicker(material, interval = 1200) {
   setInterval(() => {
@@ -218,7 +207,6 @@ function simulateStreetLampFlicker(materials) {
   }, 2000);
 }
 
-
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
@@ -233,9 +221,9 @@ function animate() {
 
     const baseSpeed = 0.5;
     const speedRatio = deloreanSpeed / baseSpeed;
-    carRadio.setPlaybackRate(speedRatio);
+    //carRadio.setPlaybackRate(speedRatio);
 
-    if (carRadioVolume < 0.4 && !isFadingOut) {
+    if (carRadioVolume < 0.1 && !isFadingOut) {
       carRadioVolume += 0.01;
       carRadio.setVolume(carRadioVolume);
     }
@@ -248,8 +236,8 @@ function animate() {
           carRadio.setVolume(carRadioVolume);
         } else {
           clearInterval(fadeInterval);
-          carRadio.stop();
           carRadioVolume = 0;
+          carRadio.setVolume(0);
           isFadingOut = false;
         }
       }, 100);
